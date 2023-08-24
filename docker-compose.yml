@@ -1,0 +1,43 @@
+version: '3.8'
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - ${BE_PORT}:${BE_PORT}
+    depends_on: 
+      - db
+    environment:
+      DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      PORT: ${BE_PORT}
+      SESSION_SECRET: ${SESSION_SECRET}
+      NODE_ENV: ${ENVIRONMENT}
+    restart: on-failure
+    env_file:
+      - .env
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - ${FE_PORT}:5173
+    environment:
+      BE_ADDRESS: ${BE_HOST}
+    env_file:
+      - .env
+
+  db:
+    image: postgres:13
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    command: ["postgres", "-c", "log_statement=all"]
+
+volumes:
+  postgres_data:

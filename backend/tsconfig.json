@@ -1,0 +1,47 @@
+{
+  "extends": "@tsconfig/node19/tsconfig.json",
+  "compilerOptions": {
+    "target": "esNext",
+    "module": "esNext",
+    "moduleResolution": "nodenext",
+    "experimentalDecorators": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./src",
+    "emitDecoratorMetadata": true,
+    "declaration": true,
+    "declarationMap": true,
+    "noImplicitAny": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+
+    "paths": {  
+      "@/routes": ["routes/index.js"],
+      "@/errors": ["errors/index.js"],
+      "@/controllers": ["controllers/index.js"],
+      "@/repositories": ["repositories/index.js"],
+      "@/middleware": ["middleware/index.js"],
+      "@/entities": ["entities/index.js"],
+      "@/context": ["context/index.js"],
+
+      "@/routes/*": ["routes/*"],
+      "@/errors/*": ["errors/*"],
+      "@/controllers/*": ["controllers/*"],
+      "@/repositories/*": ["repositories/*"],
+      "@/middleware/*": ["middleware/*"],
+      "@/entities/*": ["entities/*"],
+      "@/context/*": ["context/*"],
+    },
+  },
+  "tsc-alias": {
+    "resolveFullPaths": true,
+    "replacers": {
+      "base-url": {
+        "enabled": false,
+      }
+    }
+  }
+}

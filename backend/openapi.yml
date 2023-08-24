@@ -1,0 +1,1312 @@
+openapi: 3.1.0
+info:
+  title: CSHD
+  version: 1.0.0
+servers:
+  - url: http://cshd.gwenlian.eu/api
+    description: Production server
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: connect.sid
+  schemas:
+    Developer:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        avatar:
+          type: string
+        isStudio:
+          type: boolean
+        games:
+          type: array
+          items:
+            type: object
+            oneOf:
+              - $ref: "#/components/schemas/Game"
+              - type: string
+    Game:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        releaseDate:
+          type: string
+        developers:
+          type: array
+          items:
+            type: object
+            oneOf:
+              - $ref: "#/components/schemas/Developer"
+              - type: string
+        genres:
+          type: array
+          items:
+            type: object
+            oneOf:
+              - $ref: "#/components/schemas/Genre"
+              - type: string
+        cover:
+          type: string
+        photos:
+          type: array
+          items:
+            type: string
+        videos:
+          type: array
+          items:
+            type: string
+        reviews:
+          type: array
+          items:
+            type: object
+            oneOf:
+              - $ref: "#/components/schemas/Review"
+              - type: string
+        comments:
+          type: array
+          items:
+            type: object
+            oneOf:
+              - $ref: "#/components/schemas/Comment"
+              - type: string
+        rating:
+          type: number
+    Genre:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        games:
+          type: array
+          items:
+            type: object
+            oneOf:
+              - $ref: "#/components/schemas/Game"
+              - type: string
+    Review:
+      type: object
+      required: [game, rating, review]
+      properties:
+        game:
+          type: object
+          oneOf:
+            - $ref: "#/components/schemas/Game"
+            - type: string
+        title:
+          type: string
+        rating:
+          type: number
+        text:
+          type: string
+        user:
+          type: object
+          oneOf:
+            - $ref: "#/components/schemas/User"
+            - type: string
+        createdAt:
+          type: string
+        editedAt:
+          type: string
+    Comment:
+      type: object
+      required: [game, comment]
+      properties:
+        game:
+          type: object
+          oneOf:
+            - $ref: "#/components/schemas/Game"
+            - type: string
+        content:
+          type: string
+        user:
+          type: object
+          oneOf:
+            - $ref: "#/components/schemas/User"
+            - type: string
+        createdAt:
+          type: string
+        editedAt:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        avatar:
+          type: string
+        bio:
+          type: string
+        reviews:
+          type: array
+          items:
+            type: object
+            oneOf:
+              - $ref: "#/components/schemas/Review"
+              - type: string
+        comments:
+          type: array
+          items:
+            type: object
+            oneOf:
+              - $ref: "#/components/schemas/Comment"
+              - type: string
+        wishlist:
+          type: array
+          items:
+            type: object
+            oneOf:
+              - $ref: "#/components/schemas/Game"
+              - type: string
+        createdAt:
+          type: string
+paths:
+  /auth:
+    post:
+      summary: Logs in an existing user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - type: object
+                  properties:
+                    password:
+                      type: string
+                  required: [password]
+                - oneOf:
+                  - type: object
+                    properties:
+                      email:
+                        type: string
+                    required: [email]
+                  - type: object
+                    properties:
+                      username:
+                        type: string
+                    required: [username]
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                  isAdmin:
+                    type: boolean
+        "400":
+          description: Invalid username or password
+    get:
+      summary: Retrieves the current user's id
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                  isAdmin:
+                    type: boolean
+        "401":
+          description: Unauthorized
+    delete:
+      summary: Logs out the current user
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Successful operation
+        "401":
+          description: Unauthorized
+  /user:
+    get:
+      summary: Retrieves a list of users
+      security:
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+                usernameContains:
+                  type: string
+                order:
+                  type: object
+                  properties:
+                    username:
+                      type: string
+                      enum: [ASC, DESC]
+                    createdAt:
+                      type: string
+                      enum: [ASC, DESC]
+                    updatedAt:
+                      type: string
+                      enum: [ASC, DESC]
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthenticated"
+        "403":
+          description: Unauthorized
+    post:
+      summary: Registers a new user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password, email]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                email:
+                  type: string
+      responses:
+        "201":
+          description: User created successfully
+        "409":
+          description: Username or email already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  field:
+                    type: string
+                    enum: [username, email]
+  /user/{userId}:
+    get:
+      summary: Retrieves user's profile information
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: "#/components/schemas/User"
+        "403":
+          description: Profile is private
+        "404":
+          description: User not found
+    patch:
+      summary: Updates a user's profile information
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                avatar:
+                  type: string
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Invalid data
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not an admin
+        "404":
+          description: User not found
+    delete:
+      summary: Deletes a user
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not an admin
+        "404":
+          description: User not found
+  /user/{userId}/auth:
+    get:
+      summary: Retrieves a user's authentication information
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                  email:
+                    type: string
+        "403":
+          description: Profile is private
+        "404":
+          description: User not found
+    patch:
+      summary: Updates a user's password or email
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                newPassword:
+                  type: string
+                email:
+                  type: string
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Invalid data
+        "401":
+          description: Unauthorized
+        "403":
+          description: Only user can change their password
+        "404":
+          description: User not found
+  /user/{userId}/admin:
+    post:
+      summary: Makes a user an admin
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not an admin
+        "404":
+          description: User not found
+    delete:
+      summary: Removes a user's admin privileges
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not an admin
+        "404":
+          description: User not found
+  /user/{userId}/wishlist:
+    get:
+      summary: Retrieves user's wishlist
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  $ref: "#/components/schemas/Game"
+        "403":
+          description: Profile is private
+        "404":
+          description: User not found
+    post:
+      summary: Adds a game to the user's wishlist
+      security:
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                gameId:
+                  type: string
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Game already in wishlist
+        "401":
+          description: Unauthorized
+        "404":
+          description: Game not found
+  /user/{userId}/wishlist/{gameId}:
+    delete:
+      summary: Removes a game from the user's wishlist
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+        "404":
+          description: Game not in wishlist
+  /game:
+    get:
+      summary: Retrieves a list of all games
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+                nameContains:
+                  type: string
+                developerId:
+                  type: string
+                genreId:
+                  type: string
+                releaseDate:
+                  type: object
+                  properties:
+                    from:
+                      type: string
+                    to:
+                      type: string
+                order:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      enum: [ASC, DESC]
+                    releaseDate:
+                      type: string
+                      enum: [ASC, DESC]
+                group:
+                  type: string
+                  enum: [genre, developer]
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  $ref: "#/components/schemas/Game"
+    post:
+      summary: Creates a new game
+      security:
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required: [name, description, cover]
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                genreIds:
+                  type: array
+                  items:
+                    type: string
+                releaseDate:
+                  type: string
+                developerIds:
+                  type: array
+                  items:
+                    type: string
+                cover:
+                  type: string
+                photos:
+                  type: array
+                  items:
+                    type: string
+                videos:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Invalid data
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not an admin
+  /game/{gameId}:
+    get:
+      summary: Retrieves a game
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: "#/components/schemas/Game"
+        "404":
+          description: Game not found
+    patch:
+      summary: Updates a game
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                genreIds:
+                  type: array
+                  items:
+                    type: string
+                releaseDate:
+                  type: string
+                developerIds:
+                  type: array
+                  items:
+                    type: string
+                cover:
+                  type: string
+                photos:
+                  type: array
+                  items:
+                    type: string
+                videos:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Successful operation
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not an admin
+        "404":
+          description: Game not found
+    delete:
+      summary: Deletes a game
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+        "404":
+          description: Game not found
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not an admin
+  /game/{gameId}/review:
+    get:
+      summary: Retrieves a list of all reviews of a game
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+                gameId:
+                  type: string
+                userId:
+                  type: string
+                order:
+                  type: object
+                  properties:
+                    rating:
+                      type: string
+                      enum: [ASC, DESC]
+                    createdAt:
+                      type: string
+                      enum: [ASC, DESC]
+                    updatedAt:
+                      type: string
+                      enum: [ASC, DESC]
+                groupBy:
+                  type: string
+                  enum: [user, game]
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  $ref: "#/components/schemas/Review"
+    post:
+      summary: Add a review to a game
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  description: User's id
+                rating:
+                  type: number
+                text:
+                  type: string
+                title:
+                  type: string
+      responses:
+        "201":
+          description: Successful operation
+        "400":
+          description: User already reviewed this game
+        "401":
+          description: Unauthorized
+  /game/{gameId}/review/{reviewId}:
+    patch:
+      summary: Updates a review
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: reviewId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: number
+                title:
+                  type: string
+                text:
+                  type: string
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Invalid data
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not the author of the review
+        "404":
+          description: Review not found
+    delete:
+      summary: Deletes a review
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: reviewId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not the author of the review
+        "404":
+          description: Review not found
+  /game/{gameId}/comment:
+    get:
+      summary: Retrieves a list of all comments of a game
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+                gameId:
+                  type: string
+                userId:
+                  type: string
+                replyToId:
+                  type: string
+                recurse:
+                  type: boolean
+                order:
+                  type: object
+                  properties:
+                    createdAt:
+                      type: string
+                      enum: [ASC, DESC]
+                    updatedAt:
+                      type: string
+                      enum: [ASC, DESC]
+                groupBy:
+                  type: string
+                  enum: [user, game]
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  $ref: "#/components/schemas/Comment"
+    post:
+      summary: Add a comment to a game
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, content]
+              properties:
+                userId:
+                  type: string
+                  description: User's id
+                content:
+                  type: string
+                replyToId:
+                  type: string
+      responses:
+        "201":
+          description: Successful operation
+        "401":
+          description: Unauthorized
+  /game/{gameId}/comment/{commentId}:
+    get:
+      summary: Retrieves a comment
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: "#/components/schemas/Comment"
+        "404":
+          description: Comment not found
+    patch:
+      summary: Updates a comment
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment:
+                  type: string
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Invalid data
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not the author of the comment
+        "404":
+          description: Comment not found
+    delete:
+      summary: Deletes a comment
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not the author of the comment
+        "404":
+          description: Comment not found
+  /game/{gameId}/developer:
+    post:
+      summary: Add a developer to a game
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Successful operation
+        "400":
+          description: Developer already exists
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not an admin
+        "404":
+          description: Game not found
+  /game/{gameId}/developer/{developerId}:
+    delete:
+      summary: Deletes a developer from a game
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: developerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not an admin
+        "404":
+          description: Game not found
+  /genre:
+    get:
+      summary: Retrieves a list of all genres
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  $ref: "#/components/schemas/Genre"
+    post:
+      summary: Creates a new genre
+      security:
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+                nameContains:
+                  type: string
+                order:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      enum: [ASC, DESC]
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Genre already exists
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not an admin 
+  /genre/{genreId}:
+    get:
+      summary: Retrieves a genre
+      parameters:
+        - name: genreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  games:
+                    type: array
+                    items:
+                      type: string
+        "404":
+          description: Genre not found
+    patch:
+      summary: Updates a genre
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: genreId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Genre already exists
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not an admin
+        "404":
+          description: Genre not found
+    delete:
+      summary: Deletes a genre
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: genreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not an admin
+        "404":
+          description: Genre not found
+  /developer:
+    get:
+      summary: Retrieves a list of all developers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+                nameContains:
+                  type: string
+                order:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      enum: [ASC, DESC]
+                groupBy:
+                  type: string
+                  enum: [game]
+      responses:
+        "200":
+          description: Successful operation
+    post:
+      summary: Creates a new developer
+      security:
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                avatar:
+                  type: string
+                isStudio:
+                  type: boolean
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Developer already exists
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not an admin
+  /developer/{developerId}:
+    get:
+      summary: Retrieves a developer
+      parameters:
+        - name: developerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+        "404":
+          description: Developer not found
+    patch:
+      summary: Updates a developer
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: developerId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                avatar:
+                  type: string
+                isStudio:
+                  type: boolean
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Developer already exists
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not an admin
+        "404":
+          description: Developer not found
+    delete:
+      summary: Deletes a developer
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: developerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+        "401":
+          description: Unauthorized
+        "403":
+          description: User is not an admin
+        "404":
+          description: Developer not found
